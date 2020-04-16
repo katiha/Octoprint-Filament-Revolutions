@@ -67,7 +67,7 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
     def no_filament_gcode(self):
         return str(self._settings.get(["no_filament_gcode"])).splitlines()
 			
-		@property
+    @property
     def no_jammed_gcode(self):
         return str(self._settings.get(["no_jammed_gcode"])).splitlines()
 
@@ -139,7 +139,7 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
     def runout_sensor_triggered(self):
         return self.runout_triggered
 			
-		def jam_sensor_triggered(self):
+    def jam_sensor_triggered(self):
         return self.jam_triggered
 
     def runout_sensor_enabled(self):
