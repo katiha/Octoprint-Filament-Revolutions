@@ -77,7 +77,7 @@
     <div class="control-group">
         <div class="controls" data-toggle="tooltip" title="{{ _('Beware that for some printers, pausing is incompatible with M600 (Filament change pause) as both will move the print head and it can resume at a different position as it paused.') }}">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.jammed_pause_print"> {{ _('Pause print when filament is jammed') }}
+                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.jam_pause_print"> {{ _('Pause print when filament is jammed') }}
             </label>
         </div>
     </div>
@@ -89,5 +89,14 @@
             </label>
         </div>
     </div>
+    
+    <div class="control-group">
+        <div class="controls" data-toggle="tooltip" title="{{ _('With this option checked, the plugin will ignore subsequent reports of jammed until the print is resumed again.') }}">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.send_gcode_only_once"> {{ _('Send GCODE only once when jammed.') }}
+            </label>
+        </div>
+    </div>
+    
 
 </form>
