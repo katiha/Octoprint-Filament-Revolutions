@@ -32,7 +32,7 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
     def api_get_jammed(self):
         status = "-1"
         if self.jam_sensor_enabled():
-            status = "1" if self.jammed() else "0"
+            status = "0" if self.no_jammed() else "1"
         return jsonify(status=status)
 
     @property
@@ -66,14 +66,18 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
     @property
     def no_filament_gcode(self):
         return str(self._settings.get(["no_filament_gcode"])).splitlines()
+			
+		@property
+    def no_jammed_gcode(self):
+        return str(self._settings.get(["no_jammed_gcode"])).splitlines()
 
     @property
     def runout_pause_print(self):
         return self._settings.get_boolean(["runout_pause_print"])
 
     @property
-    def jammed_pause_print(self):
-        return self._settings.get_boolean(["jammed_pause_print"])
+    def jam_pause_print(self):
+        return self._settings.get_boolean(["jam_pause_print"])
 
     @property
     def send_gcode_only_once(self):
@@ -114,15 +118,15 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
         return dict(
             runout_pin=-1,   # Default is no pin
             runout_bounce=250,  # Debounce 250ms
-            runout_switch=0,    # Normally Open
+            runout_switch=1,    # Normally Open
             no_filament_gcode='',
             runout_pause_print=True,
 
             jam_pin=-1,  # Default is no pin
             jam_bounce=250,  # Debounce 250ms
             jam_switch=1,  # Normally Closed
-            jammed_gcode='',
-            jammed_pause_print=True,
+            no_jammed_gcode='',
+            jam_pause_print=True,
 
             mode=0,    # Board Mode
             send_gcode_only_once=False,  # Default set to False for backward compatibility
@@ -134,6 +138,9 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
 
     def runout_sensor_triggered(self):
         return self.runout_triggered
+			
+		def jam_sensor_triggered(self):
+        return self.jam_triggered
 
     def runout_sensor_enabled(self):
         return self.runout_pin != -1
@@ -144,7 +151,7 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
     def no_filament(self):
         return GPIO.input(self.runout_pin) != self.runout_switch
 
-    def jammed(self):
+    def no_jammed(self):
         return GPIO.input(self.jam_pin) != self.jam_switch
 
     def get_template_configs(self):
@@ -157,7 +164,7 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
             if self.runout_sensor_enabled() and self.no_filament():
                 self._logger.info("Printing aborted: no filament detected!")
                 self._printer.cancel_print()
-            if self.jam_sensor_enabled() and self.jammed():
+            if self.jam_sensor_enabled() and self.no_jammed():
                 self._logger.info("Printing aborted: filament jammed!")
                 self._printer.cancel_print()
 
@@ -238,7 +245,7 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
             self._logger.info("Sensor callback but no trigger state change.")
             return
 
-        if self.jammed():
+        if self.no_jammed():
             # Set the triggered flag to check next callback
             self.jam_triggered = 1
             self._logger.info("Filament jammed!")
@@ -247,12 +254,12 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
             else:
                 # Need to resend GCODE (old default) so reset trigger
                 self.jam_triggered = 0
-            if self.jammed_pause_print:
+            if self.jam_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
-            if self.jammed_gcode:
+            if self.no_jammed_gcode:
                 self._logger.info("Sending jammed GCODE")
-                self._printer.commands(self.jammed_gcode)
+                self._printer.commands(self.no_jammed_gcode)
         else:
             self._logger.info("Filament not jammed!")
             if not self.jammed_pause_print:
