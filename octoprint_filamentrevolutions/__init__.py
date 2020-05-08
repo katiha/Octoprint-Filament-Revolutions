@@ -21,70 +21,70 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
             raise Exception("RPi.GPIO must be greater than 0.6")
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
-    @octoprint.plugin.BlueprintPlugin.route("/filament", methods=["GET"])
-    def api_get_filament(self):
+    @octoprint.plugin.BlueprintPlugin.route("/irregular", methods=["GET"])
+    def api_get_irregular(self):
         status = "-1"
-        if self.runout_sensor_enabled():
-            status = "0" if self.no_filament() else "1"
+        if self.nonuniform_sensor_enabled():
+            status = "0" if self.no_irregular() else "1"
         return jsonify(status=status)
 
-    @octoprint.plugin.BlueprintPlugin.route("/jammed", methods=["GET"])
-    def api_get_jammed(self):
+    @octoprint.plugin.BlueprintPlugin.route("/overfilled", methods=["GET"])
+    def api_get_overfilled(self):
         status = "-1"
-        if self.jam_sensor_enabled():
-            status = "0" if self.no_jammed() else "1"
+        if self.overfill_sensor_enabled():
+            status = "0" if self.no_overfilled() else "1"
         return jsonify(status=status)
 
     @property
-    def runout_pin(self):
-        return int(self._settings.get(["runout_pin"]))
+    def nonuniform_pin(self):
+        return int(self._settings.get(["nonuniform_pin"]))
 
     @property
-    def jam_pin(self):
-        return int(self._settings.get(["jam_pin"]))
+    def overfill_pin(self):
+        return int(self._settings.get(["overfill_pin"]))
 
     @property
-    def runout_bounce(self):
-        return int(self._settings.get(["runout_bounce"]))
+    def nonuniform_bounce(self):
+        return int(self._settings.get(["nonuniform_bounce"]))
 
     @property
-    def jam_bounce(self):
-        return int(self._settings.get(["jam_bounce"]))
+    def overfill_bounce(self):
+        return int(self._settings.get(["overfill_bounce"]))
 
     @property
-    def runout_switch(self):
-        return int(self._settings.get(["runout_switch"]))
+    def nonuniform_switch(self):
+        return int(self._settings.get(["nonuniform_switch"]))
 
     @property
-    def jam_switch(self):
-        return int(self._settings.get(["jam_switch"]))
+    def overfill_switch(self):
+        return int(self._settings.get(["overfill_switch"]))
 
     @property
     def mode(self):
         return int(self._settings.get(["mode"]))
 
     @property
-    def no_filament_gcode(self):
-        return str(self._settings.get(["no_filament_gcode"])).splitlines()
+    def no_irregular_gcode(self):
+        return str(self._settings.get(["no_irregular_gcode"])).splitlines()
 			
     @property
-    def no_jammed_gcode(self):
-        return str(self._settings.get(["no_jammed_gcode"])).splitlines()
+    def no_overfilled_gcode(self):
+        return str(self._settings.get(["no_overfilled_gcode"])).splitlines()
 
     @property
-    def runout_pause_print(self):
-        return self._settings.get_boolean(["runout_pause_print"])
+    def nonuniform_pause_print(self):
+        return self._settings.get_boolean(["nonuniform_pause_print"])
 
     @property
-    def jam_pause_print(self):
-        return self._settings.get_boolean(["jam_pause_print"])
+    def overfill_pause_print(self):
+        return self._settings.get_boolean(["overfill_pause_print"])
 
     @property
     def send_gcode_only_once(self):
         return self._settings.get_boolean(["send_gcode_only_once"])
 
     def _setup_sensor(self):
-        if self.runout_sensor_enabled() or self.jam_sensor_enabled():
+        if self.nonuniform_sensor_enabled() or self.overfill_sensor_enabled():
             if self.mode == 0:
                 self._logger.info("Using Board Mode")
                 GPIO.setmode(GPIO.BOARD)
@@ -92,19 +92,19 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
                 self._logger.info("Using BCM Mode")
                 GPIO.setmode(GPIO.BCM)
 
-            if self.runout_sensor_enabled():
+            if self.nonuniform_sensor_enabled():
                 self._logger.info(
-                    "Filament Runout Sensor active on GPIO Pin [%s]" % self.runout_pin)
-                GPIO.setup(self.runout_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                    "Filament Nonuniform Sensor active on GPIO Pin [%s]" % self.nonuniform_pin)
+                GPIO.setup(self.nonuniform_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
-                self._logger.info("Runout Sensor Pin not configured")
+                self._logger.info("nonuniform Sensor Pin not configured")
 
-            if self.jam_sensor_enabled():
+            if self.overfill_sensor_enabled():
                 self._logger.info(
-                    "Filament Jam Sensor active on GPIO Pin [%s]" % self.jam_pin)
-                GPIO.setup(self.jam_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                    "Filament Overfill Sensor active on GPIO Pin [%s]" % self.overfill_pin)
+                GPIO.setup(self.overfill_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
-                self._logger.info("Jam Sensor Pin not configured")
+                self._logger.info("Overfill Sensor Pin not configured")
 
         else:
             self._logger.info(
@@ -116,17 +116,17 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
 
     def get_settings_defaults(self):
         return dict(
-            runout_pin=-1,   # Default is no pin
-            runout_bounce=250,  # Debounce 250ms
-            runout_switch=1,    # Normally Open
-            no_filament_gcode='',
-            runout_pause_print=True,
+            nonuniform_pin=-1,   # Default is no pin
+            nonuniform_bounce=250,  # Debounce 250ms
+            nonuniform_switch=1,    # Normally Open
+            no_irregular_gcode='',
+            nonuniform_pause_print=True,
 
-            jam_pin=-1,  # Default is no pin
-            jam_bounce=250,  # Debounce 250ms
-            jam_switch=1,  # Normally Closed
-            no_jammed_gcode='',
-            jam_pause_print=True,
+            overfill_pin=-1,  # Default is no pin
+            overfill_bounce=250,  # Debounce 250ms
+            overfill_switch=1,  # Normally Closed
+            no_overfilled_gcode='',
+            overfill_pause_print=True,
 
             mode=0,    # Board Mode
             send_gcode_only_once=False,  # Default set to False for backward compatibility
@@ -136,23 +136,23 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._setup_sensor()
 
-    def runout_sensor_triggered(self):
-        return self.runout_triggered
+    def nonuniform_sensor_triggered(self):
+        return self.nonuniform_triggered
 			
-    def jam_sensor_triggered(self):
-        return self.jam_triggered
+    def overfill_sensor_triggered(self):
+        return self.overfill_triggered
 
-    def runout_sensor_enabled(self):
-        return self.runout_pin != -1
+    def nonuniform_sensor_enabled(self):
+        return self.nonuniform_pin != -1
 
-    def jam_sensor_enabled(self):
-        return self.jam_pin != -1
+    def overfill_sensor_enabled(self):
+        return self.overfill_pin != -1
 
-    def no_filament(self):
-        return GPIO.input(self.runout_pin) != self.runout_switch
+    def no_irregular(self):
+        return GPIO.input(self.nonuniform_pin) != self.nonuniform_switch
 
-    def no_jammed(self):
-        return GPIO.input(self.jam_pin) != self.jam_switch
+    def no_overfilled(self):
+        return GPIO.input(self.overfill_pin) != self.overfill_switch
 
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=False)]
@@ -161,11 +161,11 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
         # Early abort in case of out ot filament when start printing, as we
         # can't change with a cold nozzle
         if event is Events.PRINT_STARTED:
-            if self.runout_sensor_enabled() and self.no_filament():
-                self._logger.info("Printing aborted: no filament detected!")
+            if self.nonuniform_sensor_enabled() and self.no_irregular():
+                self._logger.info("Printing aborted: no irregular detected!")
                 self._printer.cancel_print()
-            if self.jam_sensor_enabled() and self.no_jammed():
-                self._logger.info("Printing aborted: filament jammed!")
+            if self.overfill_sensor_enabled() and self.no_overfilled():
+                self._logger.info("Printing aborted: filament overfilled!")
                 self._printer.cancel_print()
 
         # Enable sensor
@@ -173,25 +173,25 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
             Events.PRINT_STARTED,
             Events.PRINT_RESUMED
         ):
-            if self.runout_sensor_enabled():
+            if self.nonuniform_sensor_enabled():
                 self._logger.info(
-                    "%s: Enabling filament runout sensor." % (event))
-                self.runout_triggered = 0  # reset triggered state
-                GPIO.remove_event_detect(self.runout_pin)
+                    "%s: Enabling filament nonuniform sensor." % (event))
+                self.nonuniform_triggered = 0  # reset triggered state
+                GPIO.remove_event_detect(self.nonuniform_pin)
                 GPIO.add_event_detect(
-                    self.runout_pin, GPIO.BOTH,
-                    callback=self.runout_sensor_callback,
-                    bouncetime=self.runout_bounce
+                    self.nonuniform_pin, GPIO.BOTH,
+                    callback=self.nonuniform_sensor_callback,
+                    bouncetime=self.nonuniform_bounce
                 )
-            if self.jam_sensor_enabled():
+            if self.overfill_sensor_enabled():
                 self._logger.info(
-                    "%s: Enabling filament jam sensor." % (event))
-                self.jam_triggered = 0  # reset triggered state
-                GPIO.remove_event_detect(self.jam_pin)
+                    "%s: Enabling filament overfill sensor." % (event))
+                self.overfill_triggered = 0  # reset triggered state
+                GPIO.remove_event_detect(self.overfill_pin)
                 GPIO.add_event_detect(
-                    self.jam_pin, GPIO.BOTH,
-                    callback=self.jam_sensor_callback,
-                    bouncetime=self.jam_bounce
+                    self.overfill_pin, GPIO.BOTH,
+                    callback=self.overfill_sensor_callback,
+                    bouncetime=self.overfill_bounce
                 )
 
         # Disable sensor
@@ -201,69 +201,69 @@ class ComputerVisionAnalyse(octoprint.plugin.StartupPlugin,
             Events.PRINT_CANCELLED,
             Events.ERROR
         ):
-            self._logger.info("%s: Disabling filament sensors." % (event))
-            if self.runout_sensor_enabled():
-                GPIO.remove_event_detect(self.runout_pin)
-            if self.jam_sensor_enabled():
-                GPIO.remove_event_detect(self.jam_pin)
+            self._logger.info("%s: Disabling irregular sensors." % (event))
+            if self.nonuniform_sensor_enabled():
+                GPIO.remove_event_detect(self.nonuniform_pin)
+            if self.overfill_sensor_enabled():
+                GPIO.remove_event_detect(self.overfill_pin)
 
-    def runout_sensor_callback(self, _):
-        sleep(self.runout_bounce/1000)
+    def nonuniform_sensor_callback(self, _):
+        sleep(self.nonuniform_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-        if self.runout_sensor_triggered():
+        if self.nonuniform_sensor_triggered():
             self._logger.info("Sensor callback but no trigger state change.")
             return
 
-        if self.no_filament():
+        if self.no_irregular():
             # Set the triggered flag to check next callback
-            self.runout_triggered = 1
-            self._logger.info("Out of filament!")
+            self.nonuniform_triggered = 1
+            self._logger.info("Out of irregular!")
             if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
-                self.runout_triggered = 0
-            if self.runout_pause_print:
+                self.nonuniform_triggered = 0
+            if self.nonuniform_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
-            if self.no_filament_gcode:
-                self._logger.info("Sending out of filament GCODE")
-                self._printer.commands(self.no_filament_gcode)
+            if self.no_irregular_gcode:
+                self._logger.info("Sending out of irregular GCODE")
+                self._printer.commands(self.no_irregular_gcode)
         else:
-            self._logger.info("Filament detected!")
-            if not self.runout_pause_print:
-                self.runout_triggered = 0
+            self._logger.info("Irregular detected!")
+            if not self.nonuniform_pause_print:
+                self.nonuniform_triggered = 0
 
-    def jam_sensor_callback(self, _):
-        sleep(self.jam_bounce/1000)
+    def overfill_sensor_callback(self, _):
+        sleep(self.overfill_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-        if self.jam_sensor_triggered():
+        if self.overfill_sensor_triggered():
             self._logger.info("Sensor callback but no trigger state change.")
             return
 
-        if self.no_jammed():
+        if self.no_overfilled():
             # Set the triggered flag to check next callback
-            self.jam_triggered = 1
-            self._logger.info("Filament jammed!")
+            self.overfill_triggered = 1
+            self._logger.info("Filament overfilled!")
             if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
-                self.jam_triggered = 0
-            if self.jam_pause_print:
+                self.overfill_triggered = 0
+            if self.overfill_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
-            if self.no_jammed_gcode:
-                self._logger.info("Sending jammed GCODE")
-                self._printer.commands(self.no_jammed_gcode)
+            if self.no_overfilled_gcode:
+                self._logger.info("Sending overfilled GCODE")
+                self._printer.commands(self.no_overfilled_gcode)
         else:
-            self._logger.info("Filament not jammed!")
-            if not self.jammed_pause_print:
-                self.jam_triggered = 0
+            self._logger.info("Filament not overfilled!")
+            if not self.overfilled_pause_print:
+                self.overfill_triggered = 0
 
     def get_update_information(self):
         return dict(
